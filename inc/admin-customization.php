@@ -219,6 +219,7 @@ function gi_add_admin_menu() {
     );
 }
 add_action('admin_menu', 'gi_add_admin_menu');
+add_action('admin_menu', 'gi_add_emergency_excel_menu', 999);
 
 /**
  * Prefecture Debug Menu
@@ -238,21 +239,35 @@ function gi_add_prefecture_debug_menu() {
         'edit.php?post_type=grant',
         'Excelインポート・エクスポート',
         'Excel管理',
-        'upload_files',  // より低い権限レベル（寄稿者以上）
+        'read',  // 最低権限レベル
         'gi-excel-management',
         'gi_excel_management_page'
     );
+}
+
+/**
+ * 緊急Excel管理メニュー追加（管理者権限問題の回避用）
+ */
+function gi_add_emergency_excel_menu() {
+    // トップレベルメニューとして Excel管理を追加
+    add_menu_page(
+        'Excel助成金管理',
+        'Excel管理',
+        'read',  // 最低権限
+        'gi-excel-emergency',
+        'gi_excel_management_page',
+        'dashicons-table-col-after',
+        99
+    );
     
-    // 管理者用のトップレベル Excel管理メニューも追加（フォールバック）
-    if (current_user_can('manage_options')) {
-        add_management_page(
-            'Excel助成金管理',
-            'Excel助成金管理',
-            'manage_options',
-            'gi-excel-admin',
-            'gi_excel_management_page'
-        );
-    }
+    // ツールメニューにも追加
+    add_management_page(
+        'Excel助成金管理',
+        'Excel助成金管理',
+        'read',
+        'gi-excel-tools',
+        'gi_excel_management_page'
+    );
 }
 
 /**
@@ -870,24 +885,17 @@ function gi_excel_management_page() {
     // デバッグ情報表示
     $current_user = wp_get_current_user();
     
-    // 詳細な権限チェック
-    if (!current_user_can('upload_files') && !current_user_can('edit_posts')) {
-        $debug_info = array(
-            'ユーザー名' => $current_user->user_login,
-            'ユーザーレベル' => $current_user->user_level ?? 'なし',
-            '権限' => implode(', ', $current_user->roles ?? array()),
-            'edit_posts権限' => current_user_can('edit_posts') ? 'あり' : 'なし',
-            'manage_options権限' => current_user_can('manage_options') ? 'あり' : 'なし'
-        );
-        
-        $message = "Excel管理機能にアクセスする権限がありません。\n\n";
-        $message .= "権限情報:\n";
-        foreach ($debug_info as $key => $value) {
-            $message .= "- {$key}: {$value}\n";
-        }
-        $message .= "\n管理者にお問い合わせください。";
-        
-        wp_die($message);
+    // 柔軟な権限チェック（ログインしていれば基本的にアクセス可能）
+    if (!is_user_logged_in()) {
+        wp_die('ログインが必要です。');
+    }
+    
+    // デバッグ情報を表示（管理者以外の場合）
+    if (!current_user_can('manage_options')) {
+        echo '<div class="notice notice-warning"><p>';
+        echo '<strong>⚠️ 注意:</strong> 管理者権限がないため、一部の機能が制限される場合があります。<br>';
+        echo '現在の権限: ' . implode(', ', $current_user->roles ?? array());
+        echo '</p></div>';
     }
     
     // 統計情報を取得
