@@ -861,7 +861,7 @@ function gi_excel_management_page() {
     }
     
     // 統計情報を取得
-    $grant_stats = gi_get_grant_statistics();
+    $grant_stats = gi_get_excel_grant_statistics();
     
     ?>
     <div class="wrap">
@@ -1062,9 +1062,9 @@ function gi_excel_management_page() {
 }
 
 /**
- * 助成金統計情報を取得
+ * Excel管理用の助成金統計情報を取得
  */
-function gi_get_grant_statistics() {
+function gi_get_excel_grant_statistics() {
     $stats = array(
         'total' => 0,
         'published' => 0,
