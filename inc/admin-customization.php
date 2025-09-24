@@ -936,7 +936,14 @@ function gi_excel_management_page() {
                                 <input type="hidden" name="action" value="gi_sample_csv">
                                 <input type="hidden" name="_wpnonce" value="<?php echo wp_create_nonce('gi_sample_csv'); ?>">
                                 <button type="submit" class="button">📄 サンプルCSVをダウンロード</button>
-                                <p class="description">インポート用の形式を確認するためのサンプルファイルです。</p>
+                                <p class="description">
+                                    <strong>📋 サンプルCSVには以下が含まれています：</strong><br>
+                                    ✅ <mark>SEO最適化ガイド</mark>（各項目の最適化方法）<br>
+                                    ✅ <mark>HTML構造指示</mark>（本文の書き方詳細）<br>
+                                    ✅ <mark>CSS実装例</mark>（スタイル設定方法）<br>
+                                    ✅ <mark>2つのサンプルデータ</mark>（基本例＋応用例）<br>
+                                    ⚠️ <strong>必ずサンプルCSVをダウンロードして形式を確認してからインポートしてください</strong>
+                                </p>
                             </form>
                         </td>
                     </tr>
@@ -1020,6 +1027,21 @@ function gi_excel_management_page() {
                 <div class="postbox" style="margin-bottom: 20px;">
                     <h3 class="hndle">📝 インポート記載ルール・フォーマットガイド</h3>
                     <div class="inside">
+                        <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745; margin-bottom: 20px;">
+                            <h4 style="color: #155724; margin: 0 0 10px 0;">📋 重要：サンプルCSVファイルの活用方法</h4>
+                            <p style="color: #155724; margin: 0;">
+                                <strong>サンプルCSVファイル</strong>には、以下の詳細な指示が<mark>行ごとに記載</mark>されています：<br>
+                                <strong>1行目：</strong> 項目名（ヘッダー）<br>
+                                <strong>2行目：</strong> 🎯 SEO最適化ガイド（各項目の検索エンジン対策）<br>
+                                <strong>3行目：</strong> 🎨 HTML構造指示（本文の具体的な書き方）<br>
+                                <strong>4行目：</strong> 💡 HTML/CSS具体例（実装方法の詳細）<br>
+                                <strong>5行目：</strong> 📊 CSS実装例（コピペ可能なコード）<br>
+                                <strong>7行目：</strong> 📝 基本的なコメント行<br>
+                                <strong>8行目：</strong> 🌟 実用例サンプルデータ1（基本版）<br>
+                                <strong>9行目：</strong> 🚀 実用例サンプルデータ2（応用版・完全HTML構造）<br><br>
+                                <strong style="color: #d73527;">⚠️ 実際のデータ入力時は、2-6行目の指示行を削除してからインポートしてください。</strong>
+                            </p>
+                        </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                             
                             <!-- 基本ルール -->
@@ -1120,6 +1142,130 @@ function gi_excel_management_page() {
                                 <li><strong>タクソノミー作成失敗:</strong> 「自動作成」オプションを有効化</li>
                                 <li><strong>改行崩れ:</strong> 複数行テキストはダブルクォートで囲む</li>
                             </ul>
+                        </div>
+                        
+                        <!-- SEO・コンテンツ品質向上ガイド -->
+                        <div style="margin-top: 20px;">
+                            <h4>🚀 SEO最適化・アクセス数増加のための記載指示</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                                
+                                <!-- SEO基本対策 -->
+                                <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; border-left: 4px solid #0ea5e9;">
+                                    <h5 style="color: #0c4a6e; margin: 0 0 10px 0;">🎯 SEO基本対策</h5>
+                                    <ul style="margin: 0; font-size: 13px;">
+                                        <li><strong>タイトル:</strong> 32文字以内、地域名+助成金名+年度を含む</li>
+                                        <li><strong>概要:</strong> 120-150文字、検索されやすいキーワード含む</li>
+                                        <li><strong>本文:</strong> 1500文字以上、見出し構造化</li>
+                                        <li><strong>メタキーワード:</strong> タグに検索キーワード5-8個</li>
+                                        <li><strong>内部リンク:</strong> 関連助成金へのリンク機会</li>
+                                    </ul>
+                                </div>
+                                
+                                <!-- HTML/CSS指示 -->
+                                <div style="background: #fef3f2; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">
+                                    <h5 style="color: #991b1b; margin: 0 0 10px 0;">🎨 HTML/CSS デザイン指示</h5>
+                                    <ul style="margin: 0; font-size: 13px;">
+                                        <li><strong>基調:</strong> 白背景・黒文字・黄色ハイライト</li>
+                                        <li><strong>表組み:</strong> border-collapse・alternating rows</li>
+                                        <li><strong>強調:</strong> &lt;mark&gt;タグで黄色マーカー</li>
+                                        <li><strong>見出し:</strong> h2-h4で階層構造</li>
+                                        <li><strong>リスト:</strong> 番号付き・箇条書き使い分け</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <!-- 詳細な記載例 -->
+                            <div style="margin-top: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                <h5 style="color: #334155; margin: 0 0 15px 0;">📝 具体的な記載例・テンプレート</h5>
+                                
+                                <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
+                                    <!-- タイトル例 -->
+                                    <div>
+                                        <strong>✅ タイトル記載例:</strong>
+                                        <div style="background: #fff; padding: 10px; border-radius: 4px; margin: 5px 0; font-family: monospace; font-size: 12px;">
+                                            <span style="color: #059669;">良い例:</span> "令和6年度 東京都IT導入支援助成金【最大1000万円】"<br>
+                                            <span style="color: #dc2626;">悪い例:</span> "IT助成金について"
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 本文HTML例 -->
+                                    <div>
+                                        <strong>🎨 本文HTML/CSS例:</strong>
+                                        <textarea readonly style="width: 100%; height: 120px; font-family: monospace; font-size: 11px; background: #1e293b; color: #e2e8f0; padding: 10px; border-radius: 4px;">
+&lt;div class="grant-content"&gt;
+    &lt;h2&gt;📋 助成金概要&lt;/h2&gt;
+    &lt;p&gt;&lt;mark&gt;最大1000万円&lt;/mark&gt;まで支援する東京都のIT導入助成金です。&lt;/p&gt;
+    
+    &lt;h3&gt;💰 助成金額・補助率&lt;/h3&gt;
+    &lt;table class="info-table"&gt;
+        &lt;tr&gt;&lt;th&gt;項目&lt;/th&gt;&lt;th&gt;内容&lt;/th&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td&gt;上限額&lt;/td&gt;&lt;td&gt;&lt;strong&gt;1,000万円&lt;/strong&gt;&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td&gt;補助率&lt;/td&gt;&lt;td&gt;&lt;mark&gt;50%&lt;/mark&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;/table&gt;
+&lt;/div&gt;</textarea>
+                                    </div>
+                                    
+                                    <!-- CSS例 -->
+                                    <div>
+                                        <strong>🎭 推奨CSSスタイル:</strong>
+                                        <textarea readonly style="width: 100%; height: 100px; font-family: monospace; font-size: 11px; background: #1e293b; color: #e2e8f0; padding: 10px; border-radius: 4px;">
+.grant-content { background: #fff; color: #000; line-height: 1.6; }
+.info-table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+.info-table th, .info-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+.info-table th { background: #f5f5f5; font-weight: bold; }
+.info-table tr:nth-child(even) { background: #f9f9f9; }
+mark { background: #ffeb3b; color: #000; padding: 2px 4px; }</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- アクセス数増加戦略 -->
+                            <div style="margin-top: 15px; background: #ecfdf5; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
+                                <h5 style="color: #047857; margin: 0 0 15px 0;">📈 アクセス数増加・検索上位対策</h5>
+                                
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                    <div>
+                                        <strong>🔍 検索キーワード戦略:</strong>
+                                        <ul style="margin: 5px 0 0 0; font-size: 12px;">
+                                            <li>地域名 + 助成金 + 業界名</li>
+                                            <li>補助金額 + 募集年度</li>
+                                            <li>対象者 + 申請方法</li>
+                                            <li>ロングテールキーワード活用</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div>
+                                        <strong>📱 ユーザビリティ向上:</strong>
+                                        <ul style="margin: 5px 0 0 0; font-size: 12px;">
+                                            <li>モバイルファーストレスポンシブ</li>
+                                            <li>読み込み速度最適化</li>
+                                            <li>目次・見出しナビゲーション</li>
+                                            <li>SNSシェアボタン設置</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div style="margin-top: 10px; padding: 10px; background: #fff; border-radius: 4px;">
+                                    <strong>🏆 コンテンツ品質チェックリスト:</strong>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 8px; font-size: 12px;">
+                                        <div>
+                                            ✅ 独自性のある情報<br>
+                                            ✅ 最新・正確なデータ<br>
+                                            ✅ 実用的な申請手順
+                                        </div>
+                                        <div>
+                                            ✅ 関連リンクの充実<br>
+                                            ✅ 画像・図表の活用<br>
+                                            ✅ FAQ・よくある質問
+                                        </div>
+                                        <div>
+                                            ✅ 更新頻度の維持<br>
+                                            ✅ ユーザー体験談<br>
+                                            ✅ 専門用語の解説
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
