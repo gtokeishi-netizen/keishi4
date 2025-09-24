@@ -667,4 +667,211 @@ function gi_download_sample_csv() {
 // サンプルCSVダウンロード用AJAX
 add_action('wp_ajax_gi_sample_csv', 'gi_download_sample_csv');
 
+/**
+ * =============================================================================
+ * 6. AI機能統合
+ * =============================================================================
+ */
+
+/**
+ * AI一括処理用AJAX
+ */
+function gi_bulk_ai_process() {
+    // 権限チェックなし - 誰でも使用可能
+    
+    // nonceチェック
+    if (!wp_verify_nonce($_POST['nonce'] ?? '', 'gi_ai_bulk_nonce')) {
+        wp_send_json_error('セキュリティチェックに失敗しました');
+    }
+    
+    $type = sanitize_text_field($_POST['type'] ?? 'summary');
+    $fields = array_map('sanitize_text_field', $_POST['fields'] ?? array());
+    
+    if (empty($fields)) {
+        wp_send_json_error('処理対象フィールドが選択されていません');
+    }
+    
+    // OpenAI API キーの確認
+    $api_key = defined('OPENAI_API_KEY') ? OPENAI_API_KEY : get_option('gi_openai_api_key', '');
+    if (empty($api_key)) {
+        wp_send_json_error('OpenAI API キーが設定されていません');
+    }
+    
+    // 助成金投稿を取得
+    $grants = get_posts(array(
+        'post_type' => 'grant',
+        'post_status' => 'any',
+        'posts_per_page' => 50, // 一度に処理する件数を制限
+        'orderby' => 'date',
+        'order' => 'DESC'
+    ));
+    
+    if (empty($grants)) {
+        wp_send_json_error('処理対象の投稿が見つかりません');
+    }
+    
+    $processed = 0;
+    $errors = array();
+    
+    foreach ($grants as $grant) {
+        try {
+            $result = gi_process_single_post_ai($grant->ID, $type, $fields, $api_key);
+            if ($result) {
+                $processed++;
+            }
+        } catch (Exception $e) {
+            $errors[] = "投稿ID {$grant->ID}: " . $e->getMessage();
+        }
+        
+        // API制限対応（1秒待機）
+        sleep(1);
+    }
+    
+    wp_send_json_success(array(
+        'processed' => $processed,
+        'total' => count($grants),
+        'errors' => $errors,
+        'type' => $type,
+        'fields' => $fields
+    ));
+}
+
+/**
+ * 個別投稿のAI処理
+ */
+function gi_process_single_post_ai($post_id, $type, $fields, $api_key) {
+    $post = get_post($post_id);
+    if (!$post) {
+        return false;
+    }
+    
+    $updated = false;
+    
+    foreach ($fields as $field) {
+        try {
+            $current_content = '';
+            $new_content = '';
+            
+            // 現在の内容を取得
+            if ($field === 'content') {
+                $current_content = $post->post_content;
+            } elseif ($field === 'summary') {
+                $current_content = get_post_meta($post_id, 'summary', true);
+            } else {
+                $current_content = get_post_meta($post_id, $field, true);
+            }
+            
+            // AI処理を実行
+            if ($type === 'summary') {
+                $new_content = gi_generate_ai_summary($post, $field, $api_key);
+            } elseif ($type === 'improve') {
+                $new_content = gi_improve_content_with_ai($current_content, $post, $field, $api_key);
+            }
+            
+            if (!empty($new_content) && $new_content !== $current_content) {
+                // 内容を更新
+                if ($field === 'content') {
+                    wp_update_post(array(
+                        'ID' => $post_id,
+                        'post_content' => $new_content
+                    ));
+                } else {
+                    update_post_meta($post_id, $field, $new_content);
+                }
+                $updated = true;
+            }
+            
+        } catch (Exception $e) {
+            error_log("AI処理エラー (投稿ID: {$post_id}, フィールド: {$field}): " . $e->getMessage());
+        }
+    }
+    
+    return $updated;
+}
+
+/**
+ * AI要約生成
+ */
+function gi_generate_ai_summary($post, $field, $api_key) {
+    $title = $post->post_title;
+    $content = wp_strip_all_tags($post->post_content);
+    $organization = get_post_meta($post->ID, 'organization', true);
+    $max_amount = get_post_meta($post->ID, 'max_amount', true);
+    
+    $prompt = "以下の助成金情報から、{$field}フィールド用の適切な要約を日本語で生成してください：\n\n";
+    $prompt .= "タイトル: {$title}\n";
+    $prompt .= "実施組織: {$organization}\n";
+    $prompt .= "最大金額: {$max_amount}万円\n";
+    $prompt .= "詳細内容: " . substr($content, 0, 500) . "\n\n";
+    
+    if ($field === 'summary') {
+        $prompt .= "100-200文字の魅力的な概要を生成してください。";
+    } elseif ($field === 'target_requirements') {
+        $prompt .= "対象者・応募要件を箇条書きで生成してください。";
+    } elseif ($field === 'application_steps') {
+        $prompt .= "申請手順を分かりやすいステップで生成してください。";
+    }
+    
+    return gi_call_openai_api($prompt, $api_key);
+}
+
+/**
+ * AI内容改善
+ */
+function gi_improve_content_with_ai($content, $post, $field, $api_key) {
+    if (empty($content)) {
+        return gi_generate_ai_summary($post, $field, $api_key);
+    }
+    
+    $prompt = "以下の助成金の{$field}フィールドの内容を改善してください。より分かりやすく、魅力的で実用的な内容にしてください：\n\n";
+    $prompt .= "現在の内容: {$content}\n\n";
+    $prompt .= "改善要求: より具体的で分かりやすく、読みやすい日本語に改善してください。";
+    
+    return gi_call_openai_api($prompt, $api_key);
+}
+
+/**
+ * OpenAI API呼び出し
+ */
+function gi_call_openai_api($prompt, $api_key) {
+    $response = wp_remote_post('https://api.openai.com/v1/chat/completions', array(
+        'timeout' => 30,
+        'headers' => array(
+            'Authorization' => 'Bearer ' . $api_key,
+            'Content-Type' => 'application/json',
+        ),
+        'body' => json_encode(array(
+            'model' => 'gpt-3.5-turbo',
+            'messages' => array(
+                array(
+                    'role' => 'system',
+                    'content' => 'あなたは助成金情報の専門家です。正確で分かりやすく実用的な日本語コンテンツを生成してください。'
+                ),
+                array(
+                    'role' => 'user',
+                    'content' => $prompt
+                )
+            ),
+            'max_tokens' => 1000,
+            'temperature' => 0.7
+        ))
+    ));
+    
+    if (is_wp_error($response)) {
+        throw new Exception('API呼び出しエラー: ' . $response->get_error_message());
+    }
+    
+    $body = wp_remote_retrieve_body($response);
+    $data = json_decode($body, true);
+    
+    if (!isset($data['choices'][0]['message']['content'])) {
+        throw new Exception('AI応答の解析に失敗しました');
+    }
+    
+    return trim($data['choices'][0]['message']['content']);
+}
+
+// AI処理用AJAX
+add_action('wp_ajax_gi_bulk_ai_process', 'gi_bulk_ai_process');
+
 ?>

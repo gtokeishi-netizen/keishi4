@@ -944,6 +944,62 @@ function gi_excel_management_page() {
             </div>
         </div>
         
+        <!-- AI機能統合セクション -->
+        <div class="postbox">
+            <h2 class="hndle">🤖 AI機能統合</h2>
+            <div class="inside">
+                <p>AI機能を使用してExcelデータの品質向上や自動処理ができます。</p>
+                
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">AI要約・生成機能</th>
+                        <td>
+                            <button type="button" class="button button-secondary" id="ai-bulk-summary">
+                                🤖 全投稿のAI要約生成
+                            </button>
+                            <button type="button" class="button button-secondary" id="ai-bulk-improve" style="margin-left: 10px;">
+                                ✨ 全投稿のAI改善
+                            </button>
+                            <p class="description">
+                                既存の助成金投稿に対してAIによる要約生成や内容改善を一括実行できます。<br>
+                                処理後にエクスポートすることで、AI処理されたデータを取得できます。
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">インポート時AI処理</th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="ai_process_on_import" id="ai_process_on_import" value="1">
+                                インポート時にAI処理を実行する
+                            </label>
+                            <p class="description">
+                                CSVインポート時に自動でAI要約・改善処理を実行します。<br>
+                                大量データの場合は時間がかかる可能性があります。
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">AI処理対象フィールド</th>
+                        <td>
+                            <label><input type="checkbox" name="ai_fields[]" value="summary" checked> 概要</label><br>
+                            <label><input type="checkbox" name="ai_fields[]" value="content" checked> 本文</label><br>
+                            <label><input type="checkbox" name="ai_fields[]" value="target_requirements"> 対象者・応募要件</label><br>
+                            <label><input type="checkbox" name="ai_fields[]" value="application_steps"> 申請手順</label><br>
+                            <p class="description">AIで処理したいフィールドを選択してください。</p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <div id="ai-progress" style="display:none; margin-top: 15px;">
+                    <div class="gi-progress-bar">
+                        <div class="gi-progress-fill" style="width: 0%;"></div>
+                    </div>
+                    <p id="ai-status">AI処理中...</p>
+                </div>
+            </div>
+        </div>
+        
         <!-- インポートセクション -->
         <div class="postbox">
             <h2 class="hndle">📥 インポート機能</h2>
@@ -987,7 +1043,14 @@ function gi_excel_management_page() {
                                 <label>
                                     <input type="checkbox" name="create_terms" value="1" checked>
                                     存在しない都道府県・カテゴリーを自動作成
+                                </label><br>
+                                <label>
+                                    <input type="checkbox" name="ai_process_import" id="ai_process_import" value="1">
+                                    インポート時にAI要約・改善を実行
                                 </label>
+                                <p class="description">
+                                    ⚠️ AI処理を有効にすると、インポート時間が大幅に増加し、OpenAI APIの料金が発生します。
+                                </p>
                             </td>
                         </tr>
                     </table>
@@ -1041,6 +1104,7 @@ function gi_excel_management_page() {
     
     <script>
     jQuery(document).ready(function($) {
+        // インポートフォーム処理
         $('#gi_import_form').on('submit', function(e) {
             var file = $('#import_file').val();
             if (!file) {
@@ -1056,6 +1120,81 @@ function gi_excel_management_page() {
             
             $('#import_submit').prop('disabled', true).text('インポート中...');
         });
+        
+        // AI一括要約生成
+        $('#ai-bulk-summary').on('click', function() {
+            if (!confirm('全投稿に対してAI要約を生成しますか？\n\n注意：OpenAI APIの利用料金が発生し、時間がかかる可能性があります。')) {
+                return;
+            }
+            
+            $(this).prop('disabled', true).text('AI処理中...');
+            $('#ai-progress').show();
+            
+            performBulkAIProcess('summary');
+        });
+        
+        // AI一括改善
+        $('#ai-bulk-improve').on('click', function() {
+            if (!confirm('全投稿に対してAI改善を実行しますか？\n\n注意：OpenAI APIの利用料金が発生し、時間がかかる可能性があります。')) {
+                return;
+            }
+            
+            $(this).prop('disabled', true).text('AI処理中...');
+            $('#ai-progress').show();
+            
+            performBulkAIProcess('improve');
+        });
+        
+        // AI一括処理関数
+        function performBulkAIProcess(type) {
+            var selectedFields = [];
+            $('input[name=\"ai_fields[]\"]:checked').each(function() {
+                selectedFields.push($(this).val());
+            });
+            
+            if (selectedFields.length === 0) {
+                alert('処理対象フィールドを選択してください。');
+                resetAIButtons();
+                return;
+            }
+            
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'gi_bulk_ai_process',
+                    type: type,
+                    fields: selectedFields,
+                    nonce: '<?php echo wp_create_nonce('gi_ai_bulk_nonce'); ?>'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        updateProgress(100);
+                        $('#ai-status').text('AI処理完了: ' + response.data.processed + '件処理されました。');
+                        alert('AI処理が完了しました。\\n処理件数: ' + response.data.processed + '件\\n\\nエクスポート機能で更新されたデータを取得できます。');
+                    } else {
+                        alert('エラー: ' + response.data.message);
+                    }
+                    resetAIButtons();
+                },
+                error: function() {
+                    alert('AI処理中にエラーが発生しました。');
+                    resetAIButtons();
+                }
+            });
+        }
+        
+        // プログレスバー更新
+        function updateProgress(percent) {
+            $('.gi-progress-fill').css('width', percent + '%');
+        }
+        
+        // AIボタンリセット
+        function resetAIButtons() {
+            $('#ai-bulk-summary').prop('disabled', false).text('🤖 全投稿のAI要約生成');
+            $('#ai-bulk-improve').prop('disabled', false).text('✨ 全投稿のAI改善');
+            $('#ai-progress').hide();
+        }
     });
     </script>
     
@@ -1078,6 +1217,19 @@ function gi_excel_management_page() {
     }
     .notice.inline {
         margin: 15px 0;
+    }
+    .gi-progress-bar {
+        width: 100%;
+        height: 20px;
+        background: #f0f0f0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin: 10px 0;
+    }
+    .gi-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #10b981, #059669);
+        transition: width 0.3s ease;
     }
     </style>
     <?php
