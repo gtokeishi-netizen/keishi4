@@ -90,25 +90,10 @@ add_action('wp_loaded', 'gi_final_init', 999);
 
 /**
  * Excel管理への直接アクセスを強制的に有効化
+ * (admin-customization.phpで登録済みのため、このセクションは無効化)
  */
-add_action('admin_menu', function() {
-    // 完全権限バイパス
-    add_menu_page(
-        'Excel管理',
-        'Excel管理', 
-        'exist', // 存在しない権限（WordPressは無視する）
-        'excel-direct-access',
-        function() {
-            if (function_exists('gi_excel_management_page')) {
-                gi_excel_management_page();
-            } else {
-                echo '<div class="wrap"><h1>Excel管理</h1><p>関数が見つかりません。</p></div>';
-            }
-        },
-        'dashicons-table-col-after',
-        7
-    );
-}, 5); // 早い段階で実行
+// 重複登録を防ぐため、この部分はコメントアウト
+// Excel管理は inc/admin-customization.php で登録されています
 
 /**
  * 管理画面でExcel機能へのアクセスを強制許可

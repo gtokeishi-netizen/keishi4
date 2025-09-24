@@ -120,12 +120,115 @@ function gi_add_sample_data_page() {
 add_action('admin_menu', 'gi_add_sample_data_page');
 
 /**
+ * サンプル助成金データを作成する関数
+ */
+function gi_create_sample_grants() {
+    $sample_grants = array(
+        array(
+            'title' => '令和6年度 東京都IT導入支援助成金【最大1000万円】',
+            'content' => '<h2>📋 助成金概要</h2><p>東京都内の中小企業向けIT導入支援助成金です。<mark>最大1000万円</mark>まで支援します。</p><h3>💰 助成金額</h3><table class="info-table"><tr><th>項目</th><th>内容</th></tr><tr><td>上限額</td><td><mark>1,000万円</mark></td></tr><tr><td>補助率</td><td>50%</td></tr></table>',
+            'prefecture' => '東京都',
+            'category' => 'IT・デジタル',
+            'organization' => '東京都産業労働局',
+            'max_amount' => '1000',
+            'deadline' => '2024-12-31'
+        ),
+        array(
+            'title' => '令和6年度 神奈川県中小企業DX推進助成金【最大500万円】',
+            'content' => '<h2>🚀 DX推進支援</h2><p>神奈川県の中小企業向けDX推進助成金です。<mark>AI・IoT導入</mark>を重点支援。</p><h3>💡 対象技術</h3><ul><li>AI・機械学習</li><li>IoT・センサー</li><li>システム開発</li></ul>',
+            'prefecture' => '神奈川県',
+            'category' => 'DX・AI',
+            'organization' => '神奈川県産業労働局',
+            'max_amount' => '500',
+            'deadline' => '2024-11-30'
+        ),
+        array(
+            'title' => '令和6年度 大阪府中小企業設備投資促進助成金【最大300万円】',
+            'content' => '<h2>🏭 設備投資支援</h2><p>大阪府内の製造業向け設備投資助成金です。<mark>生産性向上</mark>を図る設備導入を支援。</p><h3>📊 対象設備</h3><ul><li>生産設備</li><li>検査機器</li><li>環境対応設備</li></ul>',
+            'prefecture' => '大阪府',
+            'category' => '設備投資',
+            'organization' => '大阪府商工労働部',
+            'max_amount' => '300',
+            'deadline' => '2024-10-31'
+        ),
+        array(
+            'title' => '令和6年度 愛知県スタートアップ支援助成金【最大200万円】',
+            'content' => '<h2>🚀 スタートアップ支援</h2><p>愛知県内の新規創業者向け助成金です。<mark>革新的なビジネス</mark>の立ち上げを支援。</p><h3>💼 対象事業</h3><ul><li>IT・テック系</li><li>バイオ・ヘルスケア</li><li>環境・エネルギー</li></ul>',
+            'prefecture' => '愛知県',
+            'category' => '創業・ベンチャー',
+            'organization' => '愛知県産業労働部',
+            'max_amount' => '200',
+            'deadline' => '2024-09-30'
+        ),
+        array(
+            'title' => '令和6年度 福岡県海外展開支援助成金【最大150万円】',
+            'content' => '<h2>🌏 海外展開支援</h2><p>福岡県内企業の海外進出を支援する助成金です。<mark>アジア市場</mark>への展開を重点支援。</p><h3>🎯 対象地域</h3><ul><li>東南アジア</li><li>東アジア</li><li>その他アジア地域</li></ul>',
+            'prefecture' => '福岡県',
+            'category' => '海外展開',
+            'organization' => '福岡県商工部',
+            'max_amount' => '150',
+            'deadline' => '2024-08-31'
+        )
+    );
+    
+    $created_count = 0;
+    
+    foreach ($sample_grants as $grant_data) {
+        // 投稿を作成
+        $post_data = array(
+            'post_title' => $grant_data['title'],
+            'post_content' => $grant_data['content'],
+            'post_status' => 'publish',
+            'post_type' => 'grant',
+            'post_author' => get_current_user_id()
+        );
+        
+        $post_id = wp_insert_post($post_data);
+        
+        if ($post_id && !is_wp_error($post_id)) {
+            // カスタムフィールドを設定
+            update_post_meta($post_id, 'organization', $grant_data['organization']);
+            update_post_meta($post_id, 'max_amount', $grant_data['max_amount']);
+            update_post_meta($post_id, 'deadline', $grant_data['deadline']);
+            update_post_meta($post_id, 'organization_type', 'prefecture');
+            update_post_meta($post_id, 'application_status', 'open');
+            
+            // 都道府県タクソノミーを設定
+            $prefecture_term = get_term_by('name', $grant_data['prefecture'], 'grant_prefecture');
+            if (!$prefecture_term) {
+                $new_term = wp_insert_term($grant_data['prefecture'], 'grant_prefecture');
+                if (!is_wp_error($new_term)) {
+                    wp_set_post_terms($post_id, array($new_term['term_id']), 'grant_prefecture');
+                }
+            } else {
+                wp_set_post_terms($post_id, array($prefecture_term->term_id), 'grant_prefecture');
+            }
+            
+            // カテゴリータクソノミーを設定
+            $category_term = get_term_by('name', $grant_data['category'], 'grant_category');
+            if (!$category_term) {
+                $new_term = wp_insert_term($grant_data['category'], 'grant_category');
+                if (!is_wp_error($new_term)) {
+                    wp_set_post_terms($post_id, array($new_term['term_id']), 'grant_category');
+                }
+            } else {
+                wp_set_post_terms($post_id, array($category_term->term_id), 'grant_category');
+            }
+            
+            $created_count++;
+        }
+    }
+    
+    return $created_count;
+}
+
+/**
  * サンプルデータページの内容
  */
 function gi_sample_data_page_content() {
     if (isset($_POST['create_sample_data']) && check_admin_referer('gi_create_sample_data')) {
-        gi_create_sample_grants();
-        echo '<div class="notice notice-success"><p>サンプルデータを作成しました。</p></div>';
+        $created = gi_create_sample_grants();
+        echo '<div class="notice notice-success"><p>サンプルデータを' . $created . '件作成しました。</p></div>';
     }
     
     // 現在の投稿数を確認
@@ -233,16 +336,15 @@ function gi_add_prefecture_debug_menu() {
         'gi_prefecture_debug_page'
     );
     
-    // Excel管理 - 権限チェック完全無効化
-    global $menu;
-    $menu[6] = array(
+    // Excel管理メニューを適切な位置に追加（投稿メニューを置き換えないように）
+    add_menu_page(
+        'Excel管理',
         'Excel管理',
         'read',
-        'admin.php?page=gi-excel-simple', 
-        'Excel管理',
-        'menu-top',
-        'gi-excel-simple',
-        'dashicons-table-col-after'
+        'gi-excel-simple', 
+        'gi_excel_management_page',
+        'dashicons-table-col-after',
+        25 // 投稿(5)より後ろの位置に配置
     );
     
     // ページハンドラーを直接登録
