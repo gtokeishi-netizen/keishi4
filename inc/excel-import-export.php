@@ -25,7 +25,7 @@ if (!defined('ABSPATH')) {
  */
 function gi_export_grants_to_excel() {
     // 権限チェック
-    if (!current_user_can('edit_posts')) {
+    if (!current_user_can('upload_files') && !current_user_can('edit_posts')) {
         wp_die('権限がありません');
     }
 
@@ -224,7 +224,7 @@ function gi_prepare_grant_row_data($grant) {
 function gi_import_grants_from_excel() {
     // 権限チェック
     if (!current_user_can('edit_posts')) {
-        wp_die('権限がありません');
+        wp_die('権限がありません - インポート機能は編集者権限以上が必要です');
     }
 
     // nonceチェック
@@ -543,7 +543,7 @@ add_action('admin_notices', function() {
  * サンプルCSVファイルのダウンロード
  */
 function gi_download_sample_csv() {
-    if (!current_user_can('edit_posts')) {
+    if (!current_user_can('upload_files') && !current_user_can('edit_posts')) {
         wp_die('権限がありません');
     }
 

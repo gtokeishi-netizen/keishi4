@@ -238,10 +238,21 @@ function gi_add_prefecture_debug_menu() {
         'edit.php?post_type=grant',
         'Excelインポート・エクスポート',
         'Excel管理',
-        'edit_posts',
+        'upload_files',  // より低い権限レベル（寄稿者以上）
         'gi-excel-management',
         'gi_excel_management_page'
     );
+    
+    // 管理者用のトップレベル Excel管理メニューも追加（フォールバック）
+    if (current_user_can('manage_options')) {
+        add_management_page(
+            'Excel助成金管理',
+            'Excel助成金管理',
+            'manage_options',
+            'gi-excel-admin',
+            'gi_excel_management_page'
+        );
+    }
 }
 
 /**
@@ -856,8 +867,27 @@ function gi_ai_statistics_page() {
  * Excel管理ページの表示
  */
 function gi_excel_management_page() {
-    if (!current_user_can('edit_posts')) {
-        wp_die('権限がありません。');
+    // デバッグ情報表示
+    $current_user = wp_get_current_user();
+    
+    // 詳細な権限チェック
+    if (!current_user_can('upload_files') && !current_user_can('edit_posts')) {
+        $debug_info = array(
+            'ユーザー名' => $current_user->user_login,
+            'ユーザーレベル' => $current_user->user_level ?? 'なし',
+            '権限' => implode(', ', $current_user->roles ?? array()),
+            'edit_posts権限' => current_user_can('edit_posts') ? 'あり' : 'なし',
+            'manage_options権限' => current_user_can('manage_options') ? 'あり' : 'なし'
+        );
+        
+        $message = "Excel管理機能にアクセスする権限がありません。\n\n";
+        $message .= "権限情報:\n";
+        foreach ($debug_info as $key => $value) {
+            $message .= "- {$key}: {$value}\n";
+        }
+        $message .= "\n管理者にお問い合わせください。";
+        
+        wp_die($message);
     }
     
     // 統計情報を取得
