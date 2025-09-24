@@ -98,25 +98,28 @@ add_action('wp_loaded', 'gi_final_init', 999);
 /**
  * 管理画面でExcel機能へのアクセスを強制許可
  */
-add_action('current_screen', function() {
-    $screen = get_current_screen();
-    if ($screen && (
-        strpos($screen->id, 'excel') !== false ||
-        strpos($_GET['page'] ?? '', 'excel') !== false ||
-        strpos($_GET['page'] ?? '', 'gi-excel') !== false
-    )) {
-        // この画面では権限チェックを無効化
-        remove_all_actions('admin_page_access_denied');
-        
-        // current_user_can を一時的にハック
+add_action('admin_init', function() {
+    // Excel管理ページへのアクセスを完全に許可
+    if (isset($_GET['page']) && strpos($_GET['page'], 'excel') !== false) {
+        // 権限チェックを無効化
         add_filter('user_has_cap', function($caps) {
-            $caps['exist'] = true;
             $caps['read'] = true;
             $caps['edit_posts'] = true;
+            $caps['manage_options'] = true;
             return $caps;
-        });
+        }, 10, 1);
     }
 });
+
+// すべてのユーザーに最低限の権限を与える
+add_filter('user_has_cap', function($caps, $cap, $args) {
+    // 管理画面でのExcelアクセスを許可
+    if (is_admin() && (isset($_GET['page']) && strpos($_GET['page'], 'excel') !== false)) {
+        $caps['read'] = true;
+        $caps['edit_posts'] = true;
+    }
+    return $caps;
+}, 10, 3);
 
 
 

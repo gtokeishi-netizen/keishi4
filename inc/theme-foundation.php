@@ -254,6 +254,7 @@ function gi_register_post_types() {
         'publicly_queryable' => true,
         'show_ui' => true,
         'show_in_menu' => true,
+        'show_in_admin_bar' => true,
         'query_var' => true,
         'rewrite' => array(
             'slug' => 'grants',
@@ -269,6 +270,17 @@ function gi_register_post_types() {
     ));
 }
 add_action('init', 'gi_register_post_types');
+
+// パーマリンクフラッシュ（投稿タイプが確実に認識されるように）
+add_action('after_switch_theme', 'flush_rewrite_rules');
+add_action('wp_loaded', function() {
+    static $flushed = false;
+    if (!$flushed && !get_option('gi_permalinks_flushed_v2')) {
+        flush_rewrite_rules();
+        update_option('gi_permalinks_flushed_v2', true);
+        $flushed = true;
+    }
+});
 
 /**
  * カスタムタクソノミー登録
