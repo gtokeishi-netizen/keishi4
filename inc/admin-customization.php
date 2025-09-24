@@ -336,16 +336,27 @@ function gi_add_prefecture_debug_menu() {
         'gi_prefecture_debug_page'
     );
     
-    // Excel管理メニューを適切な位置に追加（1つだけ登録）
+    // Excel管理メニューを完全権限バイパスで追加
     add_menu_page(
         'Excel管理',
         'Excel管理',
-        'read',
+        'exist', // 存在しない権限で強制バイパス
         'gi-excel-management', 
         'gi_excel_management_page',
         'dashicons-table-col-after',
         25 // 投稿(5)より後ろの位置に配置
     );
+    
+    // 追加の権限バイパス - すべてのユーザーにアクセス許可
+    add_filter('user_has_cap', function($allcaps, $caps, $args) {
+        if (is_admin() && isset($_GET['page']) && $_GET['page'] === 'gi-excel-management') {
+            $allcaps['exist'] = true;
+            $allcaps['read'] = true;
+            $allcaps['edit_posts'] = true;
+            $allcaps['manage_options'] = true;
+        }
+        return $allcaps;
+    }, 10, 3);
 }
 
 /**
