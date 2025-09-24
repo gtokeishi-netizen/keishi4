@@ -1016,6 +1016,114 @@ function gi_excel_management_page() {
                     </ol>
                 </div>
                 
+                <!-- インポートルールガイド -->
+                <div class="postbox" style="margin-bottom: 20px;">
+                    <h3 class="hndle">📝 インポート記載ルール・フォーマットガイド</h3>
+                    <div class="inside">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            
+                            <!-- 基本ルール -->
+                            <div>
+                                <h4>📋 基本ルール</h4>
+                                <ul>
+                                    <li><strong>文字エンコード:</strong> UTF-8（必須）</li>
+                                    <li><strong>区切り文字:</strong> カンマ（,）</li>
+                                    <li><strong>改行あり項目:</strong> ダブルクォート（""）で囲む</li>
+                                    <li><strong>複数選択:</strong> 全角カンマ（、）で区切る</li>
+                                    <li><strong>空欄:</strong> 新規作成時はIDを空白</li>
+                                    <li><strong>更新:</strong> 既存IDを記入すると更新</li>
+                                </ul>
+                            </div>
+                            
+                            <!-- 選択項目の値 -->
+                            <div>
+                                <h4>🏷️ 選択項目の正確な値</h4>
+                                <div style="font-size: 12px;">
+                                    <strong>組織タイプ:</strong><br>
+                                    <code>national</code>=国（省庁）, <code>prefecture</code>=都道府県, <code>city</code>=市区町村,<br>
+                                    <code>public_org</code>=公的機関, <code>private_org</code>=民間団体, <code>other</code>=その他<br><br>
+                                    
+                                    <strong>申請ステータス:</strong><br>
+                                    <code>open</code>=募集中, <code>upcoming</code>=募集予定, <code>closed</code>=募集終了, <code>suspended</code>=一時停止<br><br>
+                                    
+                                    <strong>難易度:</strong><br>
+                                    <code>easy</code>=易しい, <code>normal</code>=普通, <code>hard</code>=難しい, <code>expert</code>=専門的<br><br>
+                                    
+                                    <strong>申請方法:</strong><br>
+                                    <code>online</code>=オンライン申請, <code>mail</code>=郵送申請, <code>visit</code>=窓口申請, <code>mixed</code>=併用
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 20px;">
+                            <h4>📊 データ形式の詳細例</h4>
+                            <table class="wp-list-table widefat fixed striped" style="font-size: 11px;">
+                                <thead>
+                                    <tr>
+                                        <th>項目</th>
+                                        <th>記載例</th>
+                                        <th>注意点</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>日付</strong></td>
+                                        <td><code>2024-12-31</code><br><code>2024/12/31</code></td>
+                                        <td>YYYY-MM-DD形式推奨</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>金額</strong></td>
+                                        <td><code>1000</code>（万円単位）<br><code>500</code></td>
+                                        <td>数字のみ、単位なし</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>パーセント</strong></td>
+                                        <td><code>50</code>（50%の場合）<br><code>75</code></td>
+                                        <td>数字のみ、%記号なし</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>都道府県</strong></td>
+                                        <td><code>"東京都、神奈川県"</code></td>
+                                        <td>複数は全角カンマ区切り</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>カテゴリー</strong></td>
+                                        <td><code>"IT・デジタル、設備投資"</code></td>
+                                        <td>複数は全角カンマ区切り</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>タグ</strong></td>
+                                        <td><code>"IT導入、デジタル化、補助金"</code></td>
+                                        <td>複数は全角カンマ区切り</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>長い文章</strong></td>
+                                        <td><code>"1. 申請書の準備
+2. オンライン申請"</code></td>
+                                        <td>改行ありはダブルクォート必須</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ステータス</strong></td>
+                                        <td><code>publish</code>=公開<br><code>draft</code>=下書き</td>
+                                        <td>WordPress標準値</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px;">
+                            <h4 style="color: #856404; margin: 0 0 10px 0;">⚠️ よくあるエラーと対処法</h4>
+                            <ul style="margin: 0; color: #856404;">
+                                <li><strong>文字化け:</strong> UTF-8で保存し直す</li>
+                                <li><strong>日付エラー:</strong> YYYY-MM-DD形式に統一</li>
+                                <li><strong>選択項目エラー:</strong> 上記の正確なコード値を使用</li>
+                                <li><strong>タクソノミー作成失敗:</strong> 「自動作成」オプションを有効化</li>
+                                <li><strong>改行崩れ:</strong> 複数行テキストはダブルクォートで囲む</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
                 <form method="post" action="<?php echo admin_url('admin-ajax.php'); ?>" enctype="multipart/form-data" id="gi_import_form">
                     <input type="hidden" name="action" value="gi_import_excel">
                     <input type="hidden" name="_wpnonce" value="<?php echo wp_create_nonce('gi_import_excel'); ?>">

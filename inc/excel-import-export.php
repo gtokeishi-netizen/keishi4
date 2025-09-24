@@ -329,6 +329,11 @@ function gi_process_import_row($data, $headers, $line_number) {
             return array('success' => false, 'message' => '不正なデータ形式');
         }
         
+        // コメント行をスキップ
+        if (!empty($data[0]) && strpos($data[0], '※') === 0) {
+            return array('success' => false, 'message' => 'コメント行をスキップ');
+        }
+        
         // ヘッダーとデータの対応
         $row_data = array();
         for ($i = 0; $i < count($headers) && $i < count($data); $i++) {
@@ -340,11 +345,18 @@ function gi_process_import_row($data, $headers, $line_number) {
             return array('success' => false, 'message' => 'タイトルが必要です');
         }
         
+        // 投稿ステータスの検証
+        $status = sanitize_text_field($row_data['ステータス'] ?? 'draft');
+        $valid_statuses = array('publish', 'draft', 'private', 'future');
+        if (!in_array($status, $valid_statuses)) {
+            $status = 'draft';
+        }
+        
         // 投稿データ準備
         $post_data = array(
             'post_title' => sanitize_text_field($row_data['タイトル']),
             'post_content' => wp_kses_post($row_data['本文'] ?? ''),
-            'post_status' => sanitize_text_field($row_data['ステータス'] ?? 'draft'),
+            'post_status' => $status,
             'post_type' => 'grant',
             'post_author' => get_current_user_id()
         );
@@ -408,6 +420,14 @@ function gi_update_import_custom_fields($post_id, $row_data) {
         'summary' => '概要'
     );
     
+    // 選択項目の有効値定義
+    $select_field_values = array(
+        'organization_type' => array('national', 'prefecture', 'city', 'public_org', 'private_org', 'other'),
+        'application_status' => array('open', 'upcoming', 'closed', 'suspended'),
+        'grant_difficulty' => array('easy', 'normal', 'hard', 'expert'),
+        'application_method' => array('online', 'mail', 'visit', 'mixed')
+    );
+    
     foreach ($field_mappings as $field_key => $excel_header) {
         if (isset($row_data[$excel_header]) && $row_data[$excel_header] !== '') {
             $value = sanitize_text_field($row_data[$excel_header]);
@@ -415,6 +435,28 @@ function gi_update_import_custom_fields($post_id, $row_data) {
             // 日付フィールドの処理
             if (in_array($field_key, array('deadline', 'application_start'))) {
                 $value = gi_parse_import_date($value);
+            }
+            
+            // 選択項目のバリデーション
+            if (isset($select_field_values[$field_key])) {
+                if (!in_array($value, $select_field_values[$field_key])) {
+                    // 無効な値の場合はデフォルト値を設定
+                    $defaults = array(
+                        'organization_type' => 'other',
+                        'application_status' => 'open',
+                        'grant_difficulty' => 'normal',
+                        'application_method' => 'online'
+                    );
+                    $value = $defaults[$field_key] ?? '';
+                }
+            }
+            
+            // 数値フィールドの処理
+            if (in_array($field_key, array('max_amount', 'min_amount', 'subsidy_rate', 'grant_success_rate'))) {
+                $value = preg_replace('/[^\d.]/', '', $value); // 数字と小数点のみ残す
+                if (!is_numeric($value)) {
+                    $value = '';
+                }
             }
             
             update_post_meta($post_id, $field_key, $value);
@@ -623,6 +665,41 @@ function gi_download_sample_csv() {
 
     // ヘッダー行
     fputcsv($output, gi_get_excel_headers());
+    
+    // 説明行（コメント）
+    $comment_row = array(
+        '※更新時のみ記入',
+        '※32文字以内推奨',
+        'publish/draft/private',
+        '※実施機関の正式名称',
+        'national/prefecture/city/public_org/private_org/other',
+        '※万円単位（数字のみ）',
+        '※万円単位（数字のみ）',
+        '※数字のみ（%記号なし）',
+        '※上限・条件など',
+        '※YYYY-MM-DD形式',
+        '※YYYY-MM-DD形式',
+        'open/upcoming/closed/suspended',
+        '※複数は全角カンマ区切り',
+        '※複数は全角カンマ区切り',
+        '※複数は全角カンマ区切り',
+        '※対象となる企業・個人',
+        '※対象となる経費項目',
+        'easy/normal/hard/expert',
+        '※数字のみ（%記号なし）',
+        '※箇条書き推奨',
+        '※ステップ形式推奨',
+        'online/mail/visit/mixed',
+        '※必要な提出書類',
+        '※連絡先・電話・メール',
+        '※公式サイトURL',
+        '※100-200文字推奨',
+        '※詳細な説明文',
+        '※自動設定',
+        '※自動設定',
+        '※自動設定'
+    );
+    fputcsv($output, $comment_row);
 
     // サンプルデータ行
     $sample_data = array(
