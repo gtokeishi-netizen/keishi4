@@ -232,6 +232,16 @@ function gi_add_prefecture_debug_menu() {
         'gi-prefecture-debug',
         'gi_prefecture_debug_page'
     );
+    
+    // Excel インポート・エクスポート機能メニュー追加
+    add_submenu_page(
+        'edit.php?post_type=grant',
+        'Excelインポート・エクスポート',
+        'Excel管理',
+        'edit_posts',
+        'gi-excel-management',
+        'gi_excel_management_page'
+    );
 }
 
 /**
@@ -834,4 +844,249 @@ function gi_ai_statistics_page() {
         echo '<div class="notice notice-success"><p>統計データをリセットしました。</p></div>';
         echo '<script>setTimeout(function(){ location.href="?page=gi-ai-statistics"; }, 2000);</script>';
     }
+}
+
+/**
+ * =============================================================================
+ * Excel インポート・エクスポート管理ページ
+ * =============================================================================
+ */
+
+/**
+ * Excel管理ページの表示
+ */
+function gi_excel_management_page() {
+    if (!current_user_can('edit_posts')) {
+        wp_die('権限がありません。');
+    }
+    
+    // 統計情報を取得
+    $grant_stats = gi_get_grant_statistics();
+    
+    ?>
+    <div class="wrap">
+        <h1>📊 Excel インポート・エクスポート管理</h1>
+        
+        <div class="gi-admin-notice">
+            <h3>🗃️ 助成金データ統計</h3>
+            <p><strong>総助成金投稿:</strong> <?php echo $grant_stats['total']; ?>件</p>
+            <p><strong>公開済み:</strong> <?php echo $grant_stats['published']; ?>件</p>
+            <p><strong>下書き:</strong> <?php echo $grant_stats['draft']; ?>件</p>
+            <p><strong>その他:</strong> <?php echo $grant_stats['other']; ?>件</p>
+        </div>
+        
+        <!-- エクスポートセクション -->
+        <div class="postbox">
+            <h2 class="hndle">📤 エクスポート機能</h2>
+            <div class="inside">
+                <p>助成金データをExcel（CSV）形式でダウンロードできます。</p>
+                
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">エクスポート対象</th>
+                        <td>
+                            <form method="get" action="<?php echo admin_url('admin-ajax.php'); ?>" style="display:inline-block; margin-right: 15px;">
+                                <input type="hidden" name="action" value="gi_export_excel">
+                                <input type="hidden" name="export_type" value="all">
+                                <input type="hidden" name="_wpnonce" value="<?php echo wp_create_nonce('gi_export_excel'); ?>">
+                                <button type="submit" class="button button-primary">📊 すべてのデータ (<?php echo $grant_stats['total']; ?>件)</button>
+                            </form>
+                            
+                            <form method="get" action="<?php echo admin_url('admin-ajax.php'); ?>" style="display:inline-block; margin-right: 15px;">
+                                <input type="hidden" name="action" value="gi_export_excel">
+                                <input type="hidden" name="export_type" value="published">
+                                <input type="hidden" name="_wpnonce" value="<?php echo wp_create_nonce('gi_export_excel'); ?>">
+                                <button type="submit" class="button button-secondary">✅ 公開済みのみ (<?php echo $grant_stats['published']; ?>件)</button>
+                            </form>
+                            
+                            <form method="get" action="<?php echo admin_url('admin-ajax.php'); ?>" style="display:inline-block;">
+                                <input type="hidden" name="action" value="gi_export_excel">
+                                <input type="hidden" name="export_type" value="draft">
+                                <input type="hidden" name="_wpnonce" value="<?php echo wp_create_nonce('gi_export_excel'); ?>">
+                                <button type="submit" class="button button-secondary">📝 下書きのみ (<?php echo $grant_stats['draft']; ?>件)</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">サンプルファイル</th>
+                        <td>
+                            <form method="get" action="<?php echo admin_url('admin-ajax.php'); ?>" style="display:inline-block;">
+                                <input type="hidden" name="action" value="gi_sample_csv">
+                                <input type="hidden" name="_wpnonce" value="<?php echo wp_create_nonce('gi_sample_csv'); ?>">
+                                <button type="submit" class="button">📄 サンプルCSVをダウンロード</button>
+                                <p class="description">インポート用の形式を確認するためのサンプルファイルです。</p>
+                            </form>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- インポートセクション -->
+        <div class="postbox">
+            <h2 class="hndle">📥 インポート機能</h2>
+            <div class="inside">
+                <p>CSV形式のファイルから助成金データをインポートできます。</p>
+                
+                <div class="notice notice-info inline">
+                    <h4>📋 インポート方法</h4>
+                    <ol>
+                        <li><strong>ファイル準備:</strong> 上記の「サンプルCSVをダウンロード」で形式を確認</li>
+                        <li><strong>データ編集:</strong> ExcelやGoogleスプレッドシートでデータを編集</li>
+                        <li><strong>CSV保存:</strong> UTF-8エンコードでCSV形式で保存</li>
+                        <li><strong>アップロード:</strong> 下記フォームからファイルをアップロード</li>
+                    </ol>
+                </div>
+                
+                <form method="post" action="<?php echo admin_url('admin-ajax.php'); ?>" enctype="multipart/form-data" id="gi_import_form">
+                    <input type="hidden" name="action" value="gi_import_excel">
+                    <input type="hidden" name="_wpnonce" value="<?php echo wp_create_nonce('gi_import_excel'); ?>">
+                    
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="import_file">CSVファイル</label>
+                            </th>
+                            <td>
+                                <input type="file" name="import_file" id="import_file" accept=".csv,.txt" required>
+                                <p class="description">
+                                    対応形式: CSV (.csv)、テキストファイル (.txt)<br>
+                                    ファイルサイズ上限: <?php echo size_format(wp_max_upload_size()); ?>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">インポートオプション</th>
+                            <td>
+                                <label>
+                                    <input type="checkbox" name="skip_duplicates" value="1" checked>
+                                    重複データをスキップする（IDが同じ場合は更新）
+                                </label><br>
+                                <label>
+                                    <input type="checkbox" name="create_terms" value="1" checked>
+                                    存在しない都道府県・カテゴリーを自動作成
+                                </label>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <p class="submit">
+                        <button type="submit" class="button button-primary" id="import_submit">
+                            📥 CSVファイルをインポート
+                        </button>
+                    </p>
+                </form>
+            </div>
+        </div>
+        
+        <!-- 使用方法セクション -->
+        <div class="postbox">
+            <h2 class="hndle">💡 使用方法とコツ</h2>
+            <div class="inside">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h4>📤 エクスポートのコツ</h4>
+                        <ul>
+                            <li><strong>定期バックアップ:</strong> 「すべてのデータ」を定期的にエクスポート</li>
+                            <li><strong>公開前確認:</strong> 「下書きのみ」で確認・編集</li>
+                            <li><strong>Excel編集:</strong> ダウンロード後はExcelで編集可能</li>
+                            <li><strong>データ分析:</strong> ピボットテーブルでの分析に活用</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4>📥 インポートのコツ</h4>
+                        <ul>
+                            <li><strong>サンプル活用:</strong> 必ずサンプルCSVの形式に従う</li>
+                            <li><strong>UTF-8保存:</strong> 文字化けを防ぐため必須</li>
+                            <li><strong>ID指定:</strong> 既存データ更新時はID列に投稿IDを記入</li>
+                            <li><strong>段階実行:</strong> 大量データは分割して実行</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-left: 4px solid #007cba;">
+                    <h4>🚨 重要な注意点</h4>
+                    <ul>
+                        <li><strong>バックアップ推奨:</strong> インポート前に必ずデータをエクスポートしてバックアップを取る</li>
+                        <li><strong>テスト実行:</strong> 本格運用前に少量データでテストする</li>
+                        <li><strong>権限確認:</strong> インポート・エクスポート機能は編集権限以上のユーザーのみ利用可能</li>
+                        <li><strong>エンコード:</strong> 日本語を含むファイルは必ずUTF-8で保存する</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    jQuery(document).ready(function($) {
+        $('#gi_import_form').on('submit', function(e) {
+            var file = $('#import_file').val();
+            if (!file) {
+                alert('CSVファイルを選択してください。');
+                e.preventDefault();
+                return false;
+            }
+            
+            if (!confirm('選択されたファイルをインポートしますか？\n\n重要：インポート前にデータのバックアップを取ることを強く推奨します。')) {
+                e.preventDefault();
+                return false;
+            }
+            
+            $('#import_submit').prop('disabled', true).text('インポート中...');
+        });
+    });
+    </script>
+    
+    <style>
+    .gi-admin-notice {
+        border-left: 4px solid #10b981;
+        background: #ecfdf5;
+        padding: 12px 20px;
+        margin: 20px 0;
+        border-radius: 4px;
+    }
+    .gi-admin-notice h3 {
+        color: #047857;
+        margin: 0 0 8px 0;
+        font-size: 16px;
+    }
+    .gi-admin-notice p {
+        color: #065f46;
+        margin: 4px 0;
+    }
+    .notice.inline {
+        margin: 15px 0;
+    }
+    </style>
+    <?php
+}
+
+/**
+ * 助成金統計情報を取得
+ */
+function gi_get_grant_statistics() {
+    $stats = array(
+        'total' => 0,
+        'published' => 0,
+        'draft' => 0,
+        'other' => 0
+    );
+    
+    $counts = wp_count_posts('grant');
+    
+    if ($counts) {
+        $stats['published'] = $counts->publish ?? 0;
+        $stats['draft'] = $counts->draft ?? 0;
+        $stats['total'] = $stats['published'] + $stats['draft'];
+        
+        // その他のステータス
+        foreach ($counts as $status => $count) {
+            if (!in_array($status, array('publish', 'draft', 'inherit'))) {
+                $stats['other'] += $count;
+                $stats['total'] += $count;
+            }
+        }
+    }
+    
+    return $stats;
 }

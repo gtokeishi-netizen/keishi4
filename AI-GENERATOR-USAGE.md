@@ -201,4 +201,20 @@ update_option('gi_openai_api_key', 'your-api-key-here');
 
 問題や改善要望がございましたら、開発チームまでお知らせください。
 
+## 📊 関連機能
+
+### Excel インポート・エクスポート機能
+Grant Insight Perfect では、助成金データのExcel管理機能も提供しています。
+
+- **📤 エクスポート**: 助成金データをCSV形式でダウンロード
+- **📥 インポート**: CSV形式のファイルから一括データ登録
+- **🔄 バックアップ**: 定期的なデータバックアップに活用
+
+詳しくは [`EXCEL-IMPORT-EXPORT-GUIDE.md`](EXCEL-IMPORT-EXPORT-GUIDE.md) をご覧ください。
+
+### アクセス方法
+```
+管理画面 → 助成金 → Excel管理
+```
+
 **Happy AI-powered Content Creation! 🎉**

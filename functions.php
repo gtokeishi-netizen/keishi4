@@ -37,7 +37,8 @@ $required_files = array(
     'ajax-handlers.php',        // AJAX処理（旧：3-ajax-functions.php）
     'admin-customization.php',  // 管理画面機能（旧：6-admin-functions.php）
     'fields-configuration.php', // ACF設定とフィールド定義統合（旧：acf-setup.php）
-    'external-importer.php'     // Jグランツ・インポーター機能（旧：grant-insight-jgrants-importer.php）
+    'external-importer.php',    // Jグランツ・インポーター機能（旧：grant-insight-jgrants-importer.php）
+    'excel-import-export.php'   // Excel インポート・エクスポート機能（新規追加）
 );
 
 // 各ファイルを安全に読み込み
