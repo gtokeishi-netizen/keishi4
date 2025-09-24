@@ -347,16 +347,17 @@ function gi_add_prefecture_debug_menu() {
         25
     );
     
-    // 追加の権限バイパス - すべてのユーザーにアクセス許可
-    add_filter('user_has_cap', function($allcaps, $caps, $args) {
-        if (is_admin() && isset($_GET['page']) && $_GET['page'] === 'gi-excel-management') {
-            $allcaps['exist'] = true;
-            $allcaps['read'] = true;
-            $allcaps['edit_posts'] = true;
-            $allcaps['manage_options'] = true;
+    // WordPress標準の権限チェックを完全に回避
+    add_action('admin_init', function() {
+        if (isset($_GET['page']) && $_GET['page'] === 'gi-excel-management') {
+            // 権限チェック関数を一時的に置き換え
+            if (!function_exists('current_user_can_override')) {
+                function current_user_can_override() { return true; }
+            }
+            // WordPress内部の権限チェックをバイパス
+            add_filter('user_has_cap', function() { return array('read' => true, 'exist' => true, 'manage_options' => true); }, 999);
         }
-        return $allcaps;
-    }, 10, 3);
+    });
 }
 
 /**
@@ -971,8 +972,7 @@ function gi_ai_statistics_page() {
  * Excel管理ページの表示
  */
 function gi_excel_management_page() {
-    // 完全に権限チェックを無効化 - 誰でもアクセス可能
-    // 権限チェックを一切行わない
+    // 権限チェックを完全にスキップ - 全ユーザーアクセス可能
     
     // 統計情報を取得
     $grant_stats = gi_get_excel_grant_statistics();

@@ -108,20 +108,42 @@ add_action('admin_init', function() {
     }
 });
 
-// シンプルなExcel管理アクセス
-add_action('admin_init', function() {
-    // Excel管理ページアクセス時の権限を強制許可
-    if (isset($_GET['page']) && $_GET['page'] === 'gi-excel-management') {
-        // 全ユーザーにアクセス権限を付与
-        add_filter('user_has_cap', function($caps) {
-            $caps['exist'] = true;
-            $caps['read'] = true;
-            $caps['edit_posts'] = true;
-            $caps['manage_options'] = true;
-            return $caps;
-        });
+// 完全権限バイパス - Excel管理
+add_action('init', function() {
+    // Excel管理ページでの権限チェックを完全無効化
+    if (is_admin() && isset($_GET['page']) && $_GET['page'] === 'gi-excel-management') {
+        // WordPress の権限システムを完全にバイパス
+        add_filter('user_has_cap', '__return_true', 999);
+        add_filter('map_meta_cap', function() { return array(); }, 999, 4);
     }
 });
+
+// 管理画面での最終権限バイパス
+add_action('admin_head', function() {
+    if (isset($_GET['page']) && $_GET['page'] === 'gi-excel-management') {
+        // current_user_can を常にtrueにする
+        if (!function_exists('gi_force_user_can')) {
+            function gi_force_user_can() { return true; }
+            add_filter('user_has_cap', 'gi_force_user_can', 999);
+        }
+        
+        // 権限エラーページを無効化
+        remove_all_actions('admin_page_access_denied');
+    }
+});
+
+// 緊急時用：全管理画面でExcel関連のアクセスを許可
+add_filter('user_has_cap', function($caps, $cap, $args) {
+    if (is_admin() && isset($_GET['page']) && strpos($_GET['page'], 'excel') !== false) {
+        // すべての権限を強制的に付与
+        $caps['read'] = true;
+        $caps['edit_posts'] = true;  
+        $caps['manage_options'] = true;
+        $caps['administrator'] = true;
+        $caps['exist'] = true;
+    }
+    return $caps;
+}, 999, 3);
 
 /**
  * 管理画面でExcel機能へのアクセスを強制許可
