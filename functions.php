@@ -88,6 +88,51 @@ function gi_final_init() {  // ✅ 修正
 }
 add_action('wp_loaded', 'gi_final_init', 999);
 
+/**
+ * Excel管理への直接アクセスを強制的に有効化
+ */
+add_action('admin_menu', function() {
+    // 完全権限バイパス
+    add_menu_page(
+        'Excel管理',
+        'Excel管理', 
+        'exist', // 存在しない権限（WordPressは無視する）
+        'excel-direct-access',
+        function() {
+            if (function_exists('gi_excel_management_page')) {
+                gi_excel_management_page();
+            } else {
+                echo '<div class="wrap"><h1>Excel管理</h1><p>関数が見つかりません。</p></div>';
+            }
+        },
+        'dashicons-table-col-after',
+        7
+    );
+}, 5); // 早い段階で実行
+
+/**
+ * 管理画面でExcel機能へのアクセスを強制許可
+ */
+add_action('current_screen', function() {
+    $screen = get_current_screen();
+    if ($screen && (
+        strpos($screen->id, 'excel') !== false ||
+        strpos($_GET['page'] ?? '', 'excel') !== false ||
+        strpos($_GET['page'] ?? '', 'gi-excel') !== false
+    )) {
+        // この画面では権限チェックを無効化
+        remove_all_actions('admin_page_access_denied');
+        
+        // current_user_can を一時的にハック
+        add_filter('user_has_cap', function($caps) {
+            $caps['exist'] = true;
+            $caps['read'] = true;
+            $caps['edit_posts'] = true;
+            return $caps;
+        });
+    }
+});
+
 
 
 // 以下のコードはそのまま...

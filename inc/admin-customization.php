@@ -233,15 +233,35 @@ function gi_add_prefecture_debug_menu() {
         'gi_prefecture_debug_page'
     );
     
-    // Excel管理 - 権限チェックなし、誰でもアクセス可能
-    add_menu_page(
+    // Excel管理 - 権限チェック完全無効化
+    global $menu;
+    $menu[6] = array(
+        'Excel管理',
+        'read',
+        'admin.php?page=gi-excel-simple', 
+        'Excel管理',
+        'menu-top',
+        'gi-excel-simple',
+        'dashicons-table-col-after'
+    );
+    
+    // ページハンドラーを直接登録
+    add_action('admin_init', function() {
+        if (isset($_GET['page']) && $_GET['page'] === 'gi-excel-simple') {
+            add_action('admin_notices', function() {
+                echo '<div style="display:none;"></div>'; // ダミー
+            });
+        }
+    });
+    
+    // より確実な方法でページを追加
+    add_submenu_page(
+        null, // 親メニューなし（直接アクセス用）
         'Excel管理',
         'Excel管理',
         'read',
         'gi-excel-simple',
-        'gi_excel_management_page',
-        'dashicons-table-col-after',
-        6
+        'gi_excel_management_page'
     );
 }
 
@@ -857,7 +877,10 @@ function gi_ai_statistics_page() {
  * Excel管理ページの表示
  */
 function gi_excel_management_page() {
-    // 権限チェックなし - 誰でもアクセス可能
+    // 完全に権限チェックを無効化
+    if (!function_exists('current_user_can')) {
+        function current_user_can() { return true; }
+    }
     
     // 統計情報を取得
     $grant_stats = gi_get_excel_grant_statistics();
