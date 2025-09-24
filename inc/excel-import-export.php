@@ -96,18 +96,26 @@ function gi_get_excel_headers() {
         '組織タイプ',
         '最大金額（万円）',
         '最小金額（万円）',
+        '補助率（%）',
+        '金額備考',
         '申請期限',
         '募集開始日',
+        '申請ステータス',
         '対象都道府県',
         'カテゴリー',
+        'タグ',
+        '助成金対象',
+        '対象経費',
+        '難易度',
+        '成功率（%）',
         '対象者・応募要件',
         '申請手順',
+        '申請方法',
         '必要書類',
+        '連絡先情報',
+        '公式URL',
         '概要',
         '本文',
-        'URL',
-        '連絡先',
-        '電話番号',
         '作成日',
         '更新日',
         '作成者',
@@ -125,20 +133,27 @@ function gi_prepare_grant_row_data($grant) {
     $status = get_post_status($post_id);
     $author = get_the_author_meta('display_name', $grant->post_author);
     
-    // カスタムフィールド
+    // カスタムフィールド（ACF対応）
     $organization = gi_safe_get_meta($post_id, 'organization', '');
     $organization_type = gi_safe_get_meta($post_id, 'organization_type', '');
     $max_amount = gi_safe_get_meta($post_id, 'max_amount', '');
     $min_amount = gi_safe_get_meta($post_id, 'min_amount', '');
+    $subsidy_rate = gi_safe_get_meta($post_id, 'subsidy_rate', '');
+    $amount_note = gi_safe_get_meta($post_id, 'amount_note', '');
     $deadline = gi_safe_get_meta($post_id, 'deadline', '');
     $application_start = gi_safe_get_meta($post_id, 'application_start', '');
+    $application_status = gi_safe_get_meta($post_id, 'application_status', '');
+    $grant_target = gi_safe_get_meta($post_id, 'grant_target', '');
+    $eligible_expenses = gi_safe_get_meta($post_id, 'eligible_expenses', '');
+    $grant_difficulty = gi_safe_get_meta($post_id, 'grant_difficulty', '');
+    $grant_success_rate = gi_safe_get_meta($post_id, 'grant_success_rate', '');
     $target_requirements = gi_safe_get_meta($post_id, 'target_requirements', '');
     $application_steps = gi_safe_get_meta($post_id, 'application_steps', '');
+    $application_method = gi_safe_get_meta($post_id, 'application_method', '');
     $required_documents = gi_safe_get_meta($post_id, 'required_documents', '');
+    $contact_info = gi_safe_get_meta($post_id, 'contact_info', '');
+    $official_url = gi_safe_get_meta($post_id, 'official_url', '');
     $summary = gi_safe_get_meta($post_id, 'summary', '');
-    $url = gi_safe_get_meta($post_id, 'url', '');
-    $contact = gi_safe_get_meta($post_id, 'contact', '');
-    $phone = gi_safe_get_meta($post_id, 'phone', '');
     
     // タクソノミー
     $prefecture_terms = get_the_terms($post_id, 'grant_prefecture');
@@ -159,6 +174,17 @@ function gi_prepare_grant_row_data($grant) {
             $category_names[] = $term->name;
         }
         $category = implode('、', $category_names);
+    }
+    
+    // 標準タグ対応
+    $tag_terms = get_the_terms($post_id, 'post_tag');
+    $tags = '';
+    if ($tag_terms && !is_wp_error($tag_terms)) {
+        $tag_names = array();
+        foreach ($tag_terms as $term) {
+            $tag_names[] = $term->name;
+        }
+        $tags = implode('、', $tag_names);
     }
     
     // 日付フォーマット
@@ -191,18 +217,26 @@ function gi_prepare_grant_row_data($grant) {
         $organization_type,
         $max_amount,
         $min_amount,
+        $subsidy_rate,
+        $amount_note,
         $deadline,
         $application_start,
+        $application_status,
         $prefecture,
         $category,
+        $tags,
+        $grant_target,
+        $eligible_expenses,
+        $grant_difficulty,
+        $grant_success_rate,
         $target_requirements,
         $application_steps,
+        $application_method,
         $required_documents,
+        $contact_info,
+        $official_url,
         $summary,
         $content,
-        $url,
-        $contact,
-        $phone,
         $created_date,
         $modified_date,
         $author,
@@ -356,15 +390,22 @@ function gi_update_import_custom_fields($post_id, $row_data) {
         'organization_type' => '組織タイプ',
         'max_amount' => '最大金額（万円）',
         'min_amount' => '最小金額（万円）',
+        'subsidy_rate' => '補助率（%）',
+        'amount_note' => '金額備考',
         'deadline' => '申請期限',
         'application_start' => '募集開始日',
+        'application_status' => '申請ステータス',
+        'grant_target' => '助成金対象',
+        'eligible_expenses' => '対象経費',
+        'grant_difficulty' => '難易度',
+        'grant_success_rate' => '成功率（%）',
         'target_requirements' => '対象者・応募要件',
         'application_steps' => '申請手順',
+        'application_method' => '申請方法',
         'required_documents' => '必要書類',
-        'summary' => '概要',
-        'url' => 'URL',
-        'contact' => '連絡先',
-        'phone' => '電話番号'
+        'contact_info' => '連絡先情報',
+        'official_url' => '公式URL',
+        'summary' => '概要'
     );
     
     foreach ($field_mappings as $field_key => $excel_header) {
@@ -432,6 +473,31 @@ function gi_update_import_taxonomies($post_id, $row_data) {
         
         if (!empty($category_ids)) {
             wp_set_post_terms($post_id, $category_ids, 'grant_category');
+        }
+    }
+    
+    // タグ
+    if (!empty($row_data['タグ'])) {
+        $tags = explode('、', $row_data['タグ']);
+        $tag_ids = array();
+        
+        foreach ($tags as $tag_name) {
+            $tag_name = trim($tag_name);
+            $term = get_term_by('name', $tag_name, 'post_tag');
+            
+            if (!$term) {
+                // 新しいタグを作成
+                $new_term = wp_insert_term($tag_name, 'post_tag');
+                if (!is_wp_error($new_term)) {
+                    $tag_ids[] = $new_term['term_id'];
+                }
+            } else {
+                $tag_ids[] = $term->term_id;
+            }
+        }
+        
+        if (!empty($tag_ids)) {
+            wp_set_post_terms($post_id, $tag_ids, 'post_tag');
         }
     }
 }
@@ -564,21 +630,29 @@ function gi_download_sample_csv() {
         '令和6年度IT導入支援助成金',
         'publish',
         '東京都産業労働局',
-        '都道府県',
+        'prefecture',
         '1000',
         '100',
+        '50',
+        'ただし上限1000万円まで',
         '2024-12-31',
         '2024-04-01',
+        'open',
         '東京都',
-        'IT・デジタル',
-        '東京都内に本社を有する中小企業',
-        '1. 申請書類の準備 2. オンライン申請 3. 審査 4. 採択通知',
-        '申請書、事業計画書、見積書',
-        'IT導入を支援する助成金です',
-        'この助成金は東京都内の中小企業のIT導入を支援します...',
-        'https://example.com',
-        '東京都産業労働局',
-        '03-1234-5678',
+        'IT・デジタル、設備投資',
+        'IT導入、デジタル化、生産性向上、中小企業支援',
+        '中小企業・ベンチャー企業',
+        'ソフトウェア導入費、システム開発費',
+        'medium',
+        '65',
+        '東京都内に本社を有する中小企業、従業員50名以下',
+        '1. 申請書類の準備 2. オンライン申請システムにログイン 3. 必要書類のアップロード 4. 審査 5. 採択通知',
+        'online',
+        '申請書、事業計画書、見積書、会社概要、決算書類（直近2期分）',
+        '東京都産業労働局 助成金担当窓口 TEL:03-1234-5678 MAIL:joseikin@tokyo.lg.jp',
+        'https://www.sangyo-rodo.metro.tokyo.lg.jp/josei/it-support/',
+        'IT導入を支援する助成金です。デジタル化推進により生産性向上を図る中小企業を支援します。',
+        'この助成金は東京都内の中小企業のIT導入を支援し、デジタル化による生産性向上を促進することを目的としています。対象となるのは、ソフトウェア導入、システム開発、クラウドサービス利用などIT関連の設備投資です。',
         date('Y-m-d H:i:s'),
         date('Y-m-d H:i:s'),
         get_current_user()->display_name ?? 'admin'
