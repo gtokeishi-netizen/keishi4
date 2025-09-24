@@ -336,7 +336,7 @@ function gi_add_prefecture_debug_menu() {
         'gi_prefecture_debug_page'
     );
     
-    // Excel管理メニューを完全権限バイパスで追加
+    // Excel管理メニュー（誰でもアクセス可能）
     add_menu_page(
         'Excel管理',
         'Excel管理',
@@ -344,7 +344,7 @@ function gi_add_prefecture_debug_menu() {
         'gi-excel-management', 
         'gi_excel_management_page',
         'dashicons-table-col-after',
-        25 // 投稿(5)より後ろの位置に配置
+        25
     );
     
     // 追加の権限バイパス - すべてのユーザーにアクセス許可

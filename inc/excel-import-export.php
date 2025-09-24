@@ -96,10 +96,13 @@ function gi_get_excel_headers() {
         '組織タイプ',
         '最大金額（万円）',
         '最小金額（万円）',
+        '最大助成額（数値・円単位）',
         '補助率（%）',
         '金額備考',
         '申請期限',
         '募集開始日',
+        '締切日',
+        '締切に関する備考',
         '申請ステータス',
         '対象都道府県',
         'カテゴリー',
@@ -116,6 +119,7 @@ function gi_get_excel_headers() {
         '公式URL',
         '概要',
         '本文',
+        '注目の助成金',
         '作成日',
         '更新日',
         '作成者',
@@ -138,10 +142,13 @@ function gi_prepare_grant_row_data($grant) {
     $organization_type = gi_safe_get_meta($post_id, 'organization_type', '');
     $max_amount = gi_safe_get_meta($post_id, 'max_amount', '');
     $min_amount = gi_safe_get_meta($post_id, 'min_amount', '');
+    $max_amount_numeric = gi_safe_get_meta($post_id, 'max_amount_numeric', '');
     $subsidy_rate = gi_safe_get_meta($post_id, 'subsidy_rate', '');
     $amount_note = gi_safe_get_meta($post_id, 'amount_note', '');
     $deadline = gi_safe_get_meta($post_id, 'deadline', '');
     $application_start = gi_safe_get_meta($post_id, 'application_start', '');
+    $deadline_date = gi_safe_get_meta($post_id, 'deadline_date', '');
+    $deadline_note = gi_safe_get_meta($post_id, 'deadline_note', '');
     $application_status = gi_safe_get_meta($post_id, 'application_status', '');
     $grant_target = gi_safe_get_meta($post_id, 'grant_target', '');
     $eligible_expenses = gi_safe_get_meta($post_id, 'eligible_expenses', '');
@@ -154,6 +161,7 @@ function gi_prepare_grant_row_data($grant) {
     $contact_info = gi_safe_get_meta($post_id, 'contact_info', '');
     $official_url = gi_safe_get_meta($post_id, 'official_url', '');
     $summary = gi_safe_get_meta($post_id, 'summary', '');
+    $is_featured = gi_safe_get_meta($post_id, 'is_featured', '');;
     
     // タクソノミー
     $prefecture_terms = get_the_terms($post_id, 'grant_prefecture');
@@ -217,10 +225,13 @@ function gi_prepare_grant_row_data($grant) {
         $organization_type,
         $max_amount,
         $min_amount,
+        $max_amount_numeric,
         $subsidy_rate,
         $amount_note,
         $deadline,
         $application_start,
+        $deadline_date,
+        $deadline_note,
         $application_status,
         $prefecture,
         $category,
@@ -237,6 +248,7 @@ function gi_prepare_grant_row_data($grant) {
         $official_url,
         $summary,
         $content,
+        $is_featured,
         $created_date,
         $modified_date,
         $author,
@@ -402,10 +414,13 @@ function gi_update_import_custom_fields($post_id, $row_data) {
         'organization_type' => '組織タイプ',
         'max_amount' => '最大金額（万円）',
         'min_amount' => '最小金額（万円）',
+        'max_amount_numeric' => '最大助成額（数値・円単位）',
         'subsidy_rate' => '補助率（%）',
         'amount_note' => '金額備考',
         'deadline' => '申請期限',
         'application_start' => '募集開始日',
+        'deadline_date' => '締切日',
+        'deadline_note' => '締切に関する備考',
         'application_status' => '申請ステータス',
         'grant_target' => '助成金対象',
         'eligible_expenses' => '対象経費',
@@ -417,7 +432,8 @@ function gi_update_import_custom_fields($post_id, $row_data) {
         'required_documents' => '必要書類',
         'contact_info' => '連絡先情報',
         'official_url' => '公式URL',
-        'summary' => '概要'
+        'summary' => '概要',
+        'is_featured' => '注目の助成金'
     );
     
     // 選択項目の有効値定義
@@ -432,10 +448,7 @@ function gi_update_import_custom_fields($post_id, $row_data) {
         if (isset($row_data[$excel_header]) && $row_data[$excel_header] !== '') {
             $value = sanitize_text_field($row_data[$excel_header]);
             
-            // 日付フィールドの処理
-            if (in_array($field_key, array('deadline', 'application_start'))) {
-                $value = gi_parse_import_date($value);
-            }
+
             
             // 選択項目のバリデーション
             if (isset($select_field_values[$field_key])) {
@@ -452,11 +465,21 @@ function gi_update_import_custom_fields($post_id, $row_data) {
             }
             
             // 数値フィールドの処理
-            if (in_array($field_key, array('max_amount', 'min_amount', 'subsidy_rate', 'grant_success_rate'))) {
+            if (in_array($field_key, array('max_amount', 'min_amount', 'max_amount_numeric', 'subsidy_rate', 'grant_success_rate'))) {
                 $value = preg_replace('/[^\d.]/', '', $value); // 数字と小数点のみ残す
                 if (!is_numeric($value)) {
                     $value = '';
                 }
+            }
+            
+            // 日付フィールドの処理
+            if (in_array($field_key, array('deadline', 'application_start', 'deadline_date'))) {
+                $value = gi_parse_import_date($value);
+            }
+            
+            // ブール値フィールドの処理（注目の助成金）
+            if ($field_key === 'is_featured') {
+                $value = in_array(strtolower($value), array('1', 'true', 'yes', 'はい', '注目', '特集')) ? '1' : '0';
             }
             
             update_post_meta($post_id, $field_key, $value);

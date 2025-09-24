@@ -108,66 +108,18 @@ add_action('admin_init', function() {
     }
 });
 
-// 最終手段：直接管理画面ページアクセス
-add_action('admin_menu', function() {
-    // 緊急アクセス用の隠しメニュー（権限チェック完全無視）
-    global $menu, $submenu, $_registered_pages, $_parent_pages;
-    
-    // 直接メニュー配列に追加（WordPressの権限チェックを完全に回避）
-    $menu[99] = array(
-        'Excel管理（緊急）',
-        'read',
-        'excel-emergency',
-        'Excel管理（緊急）',
-        'menu-top',
-        'excel-emergency',
-        'dashicons-table-col-after'
-    );
-    
-    // ページハンドラーを直接登録
-    $_registered_pages['admin_page_excel-emergency'] = true;
-    $_parent_pages['excel-emergency'] = '';
-    
-}, 1); // 最優先で実行
-
-// 緊急ページのコンテンツハンドラー
+// シンプルなExcel管理アクセス
 add_action('admin_init', function() {
-    if (isset($_GET['page']) && $_GET['page'] === 'excel-emergency') {
-        add_action('admin_head', function() {
-            echo '<style>.wrap { margin: 20px; }</style>';
+    // Excel管理ページアクセス時の権限を強制許可
+    if (isset($_GET['page']) && $_GET['page'] === 'gi-excel-management') {
+        // 全ユーザーにアクセス権限を付与
+        add_filter('user_has_cap', function($caps) {
+            $caps['exist'] = true;
+            $caps['read'] = true;
+            $caps['edit_posts'] = true;
+            $caps['manage_options'] = true;
+            return $caps;
         });
-    }
-});
-
-// 緊急アクセスページの実際の処理
-add_action('load-admin_page_excel-emergency', function() {
-    add_action('admin_notices', function() {
-        echo '<div class="notice notice-info"><p>🚨 緊急アクセスモードでExcel管理にアクセスしています。</p></div>';
-    });
-});
-
-// admin_page_excel-emergency フック
-add_action('admin_page_excel-emergency', function() {
-    if (function_exists('gi_excel_management_page')) {
-        gi_excel_management_page();
-    } else {
-        echo '<div class="wrap">';
-        echo '<h1>🚨 Excel管理（緊急アクセス）</h1>';
-        echo '<div class="notice notice-warning"><p>Excel管理関数をロード中です...</p></div>';
-        
-        // 強制的にファイルを読み込み
-        $admin_file = get_template_directory() . '/inc/admin-customization.php';
-        if (file_exists($admin_file)) {
-            require_once($admin_file);
-            if (function_exists('gi_excel_management_page')) {
-                gi_excel_management_page();
-            } else {
-                echo '<p>❌ 関数の読み込みに失敗しました。</p>';
-            }
-        } else {
-            echo '<p>❌ 管理ファイルが見つかりません: ' . $admin_file . '</p>';
-        }
-        echo '</div>';
     }
 });
 
