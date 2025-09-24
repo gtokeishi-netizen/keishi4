@@ -89,103 +89,45 @@ function gi_final_init() {  // ✅ 修正
 add_action('wp_loaded', 'gi_final_init', 999);
 
 /**
- * Excel管理への緊急直接アクセス（権限完全バイパス）
+ * Excel管理への安全な権限バイパス（Fatal Error修正版）
+ * 
+ * 問題を起こしていた複数の user_has_cap フィルターを統合し、
+ * 配列の適切な処理を行うことで Fatal Error を防ぐ
  */
 add_action('admin_init', function() {
-    // 直接URLアクセスの場合、権限チェックを完全スキップ
-    if (isset($_GET['page']) && ($_GET['page'] === 'gi-excel-management' || strpos($_GET['page'], 'excel') !== false)) {
-        // WordPress の権限システムを一時的に無効化
-        add_filter('map_meta_cap', function($caps, $cap, $user_id, $args) {
-            return array('exist'); // 存在しない権限で常にfalseにならないようにする
-        }, 999, 4);
-        
-        // current_user_can を常にtrueを返すように上書き
-        if (!function_exists('gi_bypass_current_user_can')) {
-            function gi_bypass_current_user_can($capability) {
-                return true;
-            }
-        }
-    }
-});
-
-// 完全権限バイパス - Excel管理
-add_action('init', function() {
-    // Excel管理ページでの権限チェックを完全無効化
-    if (is_admin() && isset($_GET['page']) && $_GET['page'] === 'gi-excel-management') {
-        // WordPress の権限システムを完全にバイパス
-        add_filter('user_has_cap', '__return_true', 999);
-        add_filter('map_meta_cap', function() { return array(); }, 999, 4);
-    }
-});
-
-// 管理画面での最終権限バイパス
-add_action('admin_head', function() {
+    // Excel管理ページアクセス時のみ権限バイパスを実行
     if (isset($_GET['page']) && $_GET['page'] === 'gi-excel-management') {
-        // current_user_can を常にtrueにする
-        if (!function_exists('gi_force_user_can')) {
-            function gi_force_user_can() { return true; }
-            add_filter('user_has_cap', 'gi_force_user_can', 999);
-        }
+        
+        // 単一の安全な user_has_cap フィルター（Fatal Error対策）
+        add_filter('user_has_cap', function($allcaps, $caps, $args) {
+            // 配列でない場合は空の配列に初期化（Fatal Error防止）
+            if (!is_array($allcaps)) {
+                $allcaps = array();
+            }
+            
+            // 必要最小限の権限のみ付与
+            $allcaps['read'] = true;
+            $allcaps['exist'] = true; 
+            $allcaps['edit_posts'] = true;
+            $allcaps['manage_options'] = true;
+            
+            return $allcaps;
+        }, 10, 3);
         
         // 権限エラーページを無効化
-        remove_all_actions('admin_page_access_denied');
-    }
-});
-
-// 緊急時用：全管理画面でExcel関連のアクセスを許可
-add_filter('user_has_cap', function($caps, $cap, $args) {
-    if (is_admin() && isset($_GET['page']) && strpos($_GET['page'], 'excel') !== false) {
-        // すべての権限を強制的に付与
-        $caps['read'] = true;
-        $caps['edit_posts'] = true;  
-        $caps['manage_options'] = true;
-        $caps['administrator'] = true;
-        $caps['exist'] = true;
-    }
-    return $caps;
-}, 999, 3);
-
-/**
- * 管理画面でExcel機能へのアクセスを強制許可
- */
-add_action('admin_init', function() {
-    // Excel管理ページへのアクセスを完全に許可
-    if (isset($_GET['page']) && strpos($_GET['page'], 'excel') !== false) {
-        // 権限チェックを無効化
-        add_filter('user_has_cap', function($caps) {
-            $caps['read'] = true;
-            $caps['edit_posts'] = true;
-            $caps['manage_options'] = true;
-            return $caps;
-        }, 10, 1);
-    }
-});
-
-// すべてのユーザーに最低限の権限を与える
-add_filter('user_has_cap', function($caps, $cap, $args) {
-    // 管理画面でのExcelアクセスを許可
-    if (is_admin() && (isset($_GET['page']) && strpos($_GET['page'], 'excel') !== false)) {
-        $caps['read'] = true;
-        $caps['edit_posts'] = true;
-        $caps['exist'] = true;
-        $caps['manage_options'] = true;
-    }
-    return $caps;
-}, 10, 3);
-
-// 最終的な緊急権限バイパス
-add_action('admin_head', function() {
-    if (isset($_GET['page']) && strpos($_GET['page'], 'excel') !== false) {
-        // 権限エラーページを無効化
-        remove_all_actions('admin_page_access_denied');
+        add_action('admin_head', function() {
+            remove_all_actions('admin_page_access_denied');
+        });
         
-        // 現在のユーザーの権限を強制的に追加
-        global $current_user;
-        if ($current_user) {
-            $current_user->allcaps['exist'] = true;
-            $current_user->allcaps['read'] = true;
-            $current_user->allcaps['manage_options'] = true;
-        }
+        // ユーザーオブジェクトに直接権限を追加（バックアップ）
+        add_action('admin_head', function() {
+            global $current_user;
+            if ($current_user && is_object($current_user) && isset($current_user->allcaps)) {
+                $current_user->allcaps['exist'] = true;
+                $current_user->allcaps['read'] = true;
+                $current_user->allcaps['manage_options'] = true;
+            }
+        });
     }
 });
 

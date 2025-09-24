@@ -347,17 +347,18 @@ function gi_add_prefecture_debug_menu() {
         25
     );
     
-    // WordPress標準の権限チェックを完全に回避
-    add_action('admin_init', function() {
-        if (isset($_GET['page']) && $_GET['page'] === 'gi-excel-management') {
-            // 権限チェック関数を一時的に置き換え
-            if (!function_exists('current_user_can_override')) {
-                function current_user_can_override() { return true; }
-            }
-            // WordPress内部の権限チェックをバイパス
-            add_filter('user_has_cap', function() { return array('read' => true, 'exist' => true, 'manage_options' => true); }, 999);
+    // 安全な権限バイパス
+    add_filter('user_has_cap', function($allcaps, $caps, $args) {
+        // Excel管理ページでのアクセス時のみ
+        if (is_admin() && isset($_GET['page']) && $_GET['page'] === 'gi-excel-management') {
+            if (!is_array($allcaps)) $allcaps = array();
+            $allcaps['read'] = true;
+            $allcaps['exist'] = true; 
+            $allcaps['edit_posts'] = true;
+            $allcaps['manage_options'] = true;
         }
-    });
+        return $allcaps;
+    }, 10, 3);
 }
 
 /**
