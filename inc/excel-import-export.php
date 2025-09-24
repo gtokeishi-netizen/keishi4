@@ -24,10 +24,7 @@ if (!defined('ABSPATH')) {
  * 助成金データをExcel形式でエクスポート
  */
 function gi_export_grants_to_excel() {
-    // 権限チェック
-    if (!current_user_can('upload_files') && !current_user_can('edit_posts')) {
-        wp_die('権限がありません');
-    }
+    // 権限チェックなし - 誰でも使用可能
 
     // nonceチェック
     if (!wp_verify_nonce($_GET['_wpnonce'] ?? '', 'gi_export_excel')) {
@@ -222,10 +219,7 @@ function gi_prepare_grant_row_data($grant) {
  * Excel/CSVファイルから助成金データをインポート
  */
 function gi_import_grants_from_excel() {
-    // 権限チェック
-    if (!current_user_can('edit_posts')) {
-        wp_die('権限がありません - インポート機能は編集者権限以上が必要です');
-    }
+    // 権限チェックなし - 誰でも使用可能
 
     // nonceチェック
     if (!wp_verify_nonce($_POST['_wpnonce'] ?? '', 'gi_import_excel')) {
@@ -543,9 +537,7 @@ add_action('admin_notices', function() {
  * サンプルCSVファイルのダウンロード
  */
 function gi_download_sample_csv() {
-    if (!current_user_can('upload_files') && !current_user_can('edit_posts')) {
-        wp_die('権限がありません');
-    }
+    // 権限チェックなし - 誰でも使用可能
 
     if (!wp_verify_nonce($_GET['_wpnonce'] ?? '', 'gi_sample_csv')) {
         wp_die('セキュリティチェックに失敗しました');

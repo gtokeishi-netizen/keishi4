@@ -88,27 +88,7 @@ function gi_final_init() {  // ✅ 修正
 }
 add_action('wp_loaded', 'gi_final_init', 999);
 
-/**
- * 緊急Excel管理アクセス用フック（権限問題の回避）
- */
-function gi_emergency_excel_access() {
-    // 管理画面でのみ実行
-    if (is_admin() && current_user_can('read')) {
-        // Excel管理への直接アクセスを可能にする
-        add_action('admin_menu', function() {
-            add_menu_page(
-                '🆘 緊急Excel管理',
-                '🆘 Excel管理',
-                'read',
-                'emergency-excel-access',
-                'gi_excel_management_page',
-                'dashicons-table-col-after',
-                999
-            );
-        }, 1000);
-    }
-}
-add_action('init', 'gi_emergency_excel_access');
+
 
 // 以下のコードはそのまま...
 

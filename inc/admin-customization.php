@@ -219,7 +219,6 @@ function gi_add_admin_menu() {
     );
 }
 add_action('admin_menu', 'gi_add_admin_menu');
-add_action('admin_menu', 'gi_add_emergency_excel_menu', 999);
 
 /**
  * Prefecture Debug Menu
@@ -234,39 +233,15 @@ function gi_add_prefecture_debug_menu() {
         'gi_prefecture_debug_page'
     );
     
-    // Excel インポート・エクスポート機能メニュー追加
-    add_submenu_page(
-        'edit.php?post_type=grant',
-        'Excelインポート・エクスポート',
-        'Excel管理',
-        'read',  // 最低権限レベル
-        'gi-excel-management',
-        'gi_excel_management_page'
-    );
-}
-
-/**
- * 緊急Excel管理メニュー追加（管理者権限問題の回避用）
- */
-function gi_add_emergency_excel_menu() {
-    // トップレベルメニューとして Excel管理を追加
+    // Excel管理 - 権限チェックなし、誰でもアクセス可能
     add_menu_page(
-        'Excel助成金管理',
         'Excel管理',
-        'read',  // 最低権限
-        'gi-excel-emergency',
+        'Excel管理',
+        'read',
+        'gi-excel-simple',
         'gi_excel_management_page',
         'dashicons-table-col-after',
-        99
-    );
-    
-    // ツールメニューにも追加
-    add_management_page(
-        'Excel助成金管理',
-        'Excel助成金管理',
-        'read',
-        'gi-excel-tools',
-        'gi_excel_management_page'
+        6
     );
 }
 
@@ -882,21 +857,7 @@ function gi_ai_statistics_page() {
  * Excel管理ページの表示
  */
 function gi_excel_management_page() {
-    // デバッグ情報表示
-    $current_user = wp_get_current_user();
-    
-    // 柔軟な権限チェック（ログインしていれば基本的にアクセス可能）
-    if (!is_user_logged_in()) {
-        wp_die('ログインが必要です。');
-    }
-    
-    // デバッグ情報を表示（管理者以外の場合）
-    if (!current_user_can('manage_options')) {
-        echo '<div class="notice notice-warning"><p>';
-        echo '<strong>⚠️ 注意:</strong> 管理者権限がないため、一部の機能が制限される場合があります。<br>';
-        echo '現在の権限: ' . implode(', ', $current_user->roles ?? array());
-        echo '</p></div>';
-    }
+    // 権限チェックなし - 誰でもアクセス可能
     
     // 統計情報を取得
     $grant_stats = gi_get_excel_grant_statistics();
